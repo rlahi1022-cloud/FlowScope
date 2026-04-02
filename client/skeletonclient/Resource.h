@@ -1,6 +1,6 @@
 ﻿//{{NO_DEPENDENCIES}}
-// Microsoft Visual C++에서 생성한 포함 파일입니다.
-// skeletonclient.rc에서 사용
+// Microsoft Visual C++ generated include file.
+// Used by skeletonclient.rc
 //
 #define IDR_MAINFRAME					128
 #define IDM_ABOUTBOX					0x0010
@@ -8,7 +8,7 @@
 #define IDS_ABOUTBOX					101
 #define IDD_SKELETONCLIENT_DIALOG				102
 
-// ── 상단: Connection bar ──
+// -- Top: Connection bar --
 #define IDC_COMBO_SERVER            1001
 #define IDC_EDIT_IP                 1002
 #define IDC_EDIT_PORT               1003
@@ -19,21 +19,25 @@
 #define IDC_STATIC_IP_LABEL         1008
 #define IDC_STATIC_PORT_LABEL       1009
 
-// ── 왼쪽: Architecture flow ──
+// -- Left: Architecture flow --
 #define IDC_STATIC_FLOW             1010
+#define IDC_BTN_SERVER1             1011
+#define IDC_BTN_SERVER2             1012
+#define IDC_BTN_SERVER3             1013
+#define IDC_BTN_SERVER4             1014
 
-// ── 오른쪽: Chat ──
+// -- Right: Chat --
 #define IDC_LIST_CHAT               1020
 #define IDC_EDIT_MSG                1021
 #define IDC_BTN_SEND                1022
 #define IDC_STATIC_CHAT_LABEL       1023
 
-// ── 하단: Log ──
+// -- Bottom: Log --
 #define IDC_LIST_LOG                1030
 #define IDC_BTN_CLEAR               1031
 #define IDC_STATIC_LOG_LABEL        1032
 
-// 다음은 새 개체에 사용할 기본값입니다.
+// Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
