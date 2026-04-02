@@ -1,0 +1,9 @@
+.vs/
+client/**/Debug/
+client/**/Release/
+client/**/x64/
+*.obj
+*.pch
+*.pdb
+*.ilk
+*.log
