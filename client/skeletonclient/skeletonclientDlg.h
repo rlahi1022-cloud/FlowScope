@@ -41,9 +41,10 @@ protected:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnDestroy();
 	afx_msg void OnBtnConnect();
-	afx_msg void OnBtnDisconnect();
 	afx_msg void OnBtnSend();
 	afx_msg void OnBtnClear();
+	afx_msg void OnBtnStart();
+	afx_msg void OnBtnStop();
 	afx_msg void OnComboServerChange();
 	afx_msg void OnBtnServer1();
 	afx_msg void OnBtnServer2();
@@ -59,13 +60,15 @@ private:
 	// -- controls --
 	CComboBox m_comboServer;
 	CEdit     m_editIP;
-	CEdit     m_editPort;
+	CComboBox m_comboPort;      // port as combo (dynamic)
 	CStatic   m_staticStatus;
 	CStatic   m_staticFlow;
 	CListBox  m_listChat;
 	CEdit     m_editMsg;
 	CListBox  m_listLog;
 	CButton   m_btnServer[SERVER_COUNT];
+	CButton   m_btnStart;
+	CButton   m_btnStop;
 
 	// -- socket --
 	CClientSocket* m_pSocket;
@@ -82,6 +85,7 @@ private:
 	void UpdateFlowDisplay();
 	void SelectServer(ServerType type);
 	void UpdateServerButtons();
+	void DoDisconnect();
 
 	// -- socket callbacks --
 	void OnSocketConnected(bool success);
@@ -93,5 +97,6 @@ private:
 	void AddLogEntry(const CString& log);
 	void UpdateStatusDisplay();
 	void SetDefaultPort();
+	int  GetSelectedPort();
 	void LayoutControls(int cx, int cy);
 };

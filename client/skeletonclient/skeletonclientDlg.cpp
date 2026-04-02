@@ -75,7 +75,8 @@ BEGIN_MESSAGE_MAP(CskeletonclientDlg, CDialogEx)
 	ON_WM_DESTROY()
 	ON_WM_TIMER()
 	ON_BN_CLICKED(IDC_BTN_CONNECT, &CskeletonclientDlg::OnBtnConnect)
-	ON_BN_CLICKED(IDC_BTN_DISCONNECT, &CskeletonclientDlg::OnBtnDisconnect)
+	ON_BN_CLICKED(IDC_BTN_START, &CskeletonclientDlg::OnBtnStart)
+	ON_BN_CLICKED(IDC_BTN_STOP, &CskeletonclientDlg::OnBtnStop)
 	ON_BN_CLICKED(IDC_BTN_SEND, &CskeletonclientDlg::OnBtnSend)
 	ON_BN_CLICKED(IDC_BTN_CLEAR, &CskeletonclientDlg::OnBtnClear)
 	ON_BN_CLICKED(IDC_BTN_SERVER1, &CskeletonclientDlg::OnBtnServer1)
@@ -106,7 +107,7 @@ void CskeletonclientDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_COMBO_SERVER, m_comboServer);
 	DDX_Control(pDX, IDC_EDIT_IP, m_editIP);
-	DDX_Control(pDX, IDC_EDIT_PORT, m_editPort);
+	// m_comboPort is created dynamically (not in rc)
 	DDX_Control(pDX, IDC_STATIC_STATUS, m_staticStatus);
 	DDX_Control(pDX, IDC_STATIC_FLOW, m_staticFlow);
 	DDX_Control(pDX, IDC_LIST_CHAT, m_listChat);
@@ -149,6 +150,20 @@ BOOL CskeletonclientDlg::OnInitDialog()
 	m_comboServer.SetCurSel(1);
 
 	m_editIP.SetWindowText(_T("127.0.0.1"));
+
+	// -- hide rc-defined port edit, create port combo dynamically --
+	CWnd* pPortEdit = GetDlgItem(IDC_EDIT_PORT);
+	if (pPortEdit) pPortEdit->ShowWindow(SW_HIDE);
+
+	m_comboPort.Create(
+		CBS_DROPDOWNLIST | WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_TABSTOP,
+		CRect(0, 0, 60, 200), this, IDC_EDIT_PORT + 100);
+	m_comboPort.SetFont(GetFont());
+	m_comboPort.AddString(_T("9001"));
+	m_comboPort.AddString(_T("9002"));
+	m_comboPort.AddString(_T("9003"));
+	m_comboPort.AddString(_T("9004"));
+
 	SetDefaultPort();
 	m_staticStatus.SetWindowText(_T("Disconnected"));
 
@@ -168,6 +183,18 @@ BOOL CskeletonclientDlg::OnInitDialog()
 		m_btnServer[i].SetFont(GetFont());
 	}
 
+	// -- Start/Stop buttons (positioned in LayoutControls) --
+	m_btnStart.Create(_T("Start"),
+		WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+		CRect(0, 0, 60, 24), this, IDC_BTN_START);
+	m_btnStart.SetFont(GetFont());
+
+	m_btnStop.Create(_T("Stop"),
+		WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+		CRect(0, 0, 60, 24), this, IDC_BTN_STOP);
+	m_btnStop.SetFont(GetFont());
+	m_btnStop.EnableWindow(FALSE);
+
 	// -- flow init --
 	m_currentServer = SERVER_EPOLL;
 	BuildFlowSteps(m_currentServer);
@@ -184,8 +211,11 @@ BOOL CskeletonclientDlg::OnInitDialog()
 	}
 
 	// -- button state --
-	GetDlgItem(IDC_BTN_DISCONNECT)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BTN_SEND)->EnableWindow(FALSE);
+
+	// -- hide Disconnect button from RC (not needed, using Stop instead) --
+	CWnd* pDisconnect = GetDlgItem(IDC_BTN_DISCONNECT);
+	if (pDisconnect) pDisconnect->ShowWindow(SW_HIDE);
 
 	// -- layout --
 	CRect rc;
@@ -285,17 +315,16 @@ void CskeletonclientDlg::OnBtnConnect()
 {
 	if (m_bConnected) return;
 
-	CString strIP, strPort;
+	CString strIP;
 	m_editIP.GetWindowText(strIP);
-	m_editPort.GetWindowText(strPort);
 
-	if (strIP.IsEmpty() || strPort.IsEmpty())
+	if (strIP.IsEmpty())
 	{
-		AfxMessageBox(_T("IP / Port required"));
+		AfxMessageBox(_T("IP required"));
 		return;
 	}
 
-	int nPort = _ttoi(strPort);
+	int nPort = GetSelectedPort();
 
 	if (m_pSocket)
 	{
@@ -325,7 +354,7 @@ void CskeletonclientDlg::OnBtnConnect()
 	UpdateFlowDisplay();
 }
 
-void CskeletonclientDlg::OnBtnDisconnect()
+void CskeletonclientDlg::DoDisconnect()
 {
 	if (m_pSocket)
 	{
@@ -339,10 +368,21 @@ void CskeletonclientDlg::OnBtnDisconnect()
 	UpdateFlowDisplay();
 
 	GetDlgItem(IDC_BTN_CONNECT)->EnableWindow(TRUE);
-	GetDlgItem(IDC_BTN_DISCONNECT)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BTN_SEND)->EnableWindow(FALSE);
+	if (m_btnStart.GetSafeHwnd()) m_btnStart.EnableWindow(TRUE);
+	if (m_btnStop.GetSafeHwnd()) m_btnStop.EnableWindow(FALSE);
 
 	AddChatMessage(_T("[System] Disconnected"));
+}
+
+void CskeletonclientDlg::OnBtnStart()
+{
+	OnBtnConnect();
+}
+
+void CskeletonclientDlg::OnBtnStop()
+{
+	DoDisconnect();
 }
 
 void CskeletonclientDlg::OnSocketConnected(bool success)
@@ -352,14 +392,13 @@ void CskeletonclientDlg::OnSocketConnected(bool success)
 		m_bConnected = true;
 		UpdateStatusDisplay();
 		GetDlgItem(IDC_BTN_CONNECT)->EnableWindow(FALSE);
-		GetDlgItem(IDC_BTN_DISCONNECT)->EnableWindow(TRUE);
 		GetDlgItem(IDC_BTN_SEND)->EnableWindow(TRUE);
+		if (m_btnStart.GetSafeHwnd()) m_btnStart.EnableWindow(FALSE);
+		if (m_btnStop.GetSafeHwnd()) m_btnStop.EnableWindow(TRUE);
 
-		CString strPort;
-		m_editPort.GetWindowText(strPort);
 		CString msg;
-		msg.Format(_T("[System] Connected to Server %d (port %s)"),
-			m_comboServer.GetCurSel() + 1, (LPCTSTR)strPort);
+		msg.Format(_T("[System] Connected to Server %d (port %d)"),
+			m_comboServer.GetCurSel() + 1, GetSelectedPort());
 		AddChatMessage(msg);
 	}
 	else
@@ -383,8 +422,9 @@ void CskeletonclientDlg::OnSocketDisconnected()
 	UpdateStatusDisplay();
 	UpdateFlowDisplay();
 	GetDlgItem(IDC_BTN_CONNECT)->EnableWindow(TRUE);
-	GetDlgItem(IDC_BTN_DISCONNECT)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BTN_SEND)->EnableWindow(FALSE);
+	if (m_btnStart.GetSafeHwnd()) m_btnStart.EnableWindow(TRUE);
+	if (m_btnStop.GetSafeHwnd()) m_btnStop.EnableWindow(FALSE);
 	AddChatMessage(_T("[System] Server disconnected"));
 }
 
@@ -442,12 +482,18 @@ void CskeletonclientDlg::OnComboServerChange()
 void CskeletonclientDlg::SetDefaultPort()
 {
 	int sel = m_comboServer.GetCurSel();
-	if (sel >= 0 && sel < SERVER_COUNT)
+	if (sel >= 0 && sel < SERVER_COUNT && m_comboPort.GetSafeHwnd())
 	{
-		CString port;
-		port.Format(_T("%d"), DEFAULT_PORTS[sel]);
-		m_editPort.SetWindowText(port);
+		m_comboPort.SetCurSel(sel);
 	}
+}
+
+int CskeletonclientDlg::GetSelectedPort()
+{
+	if (!m_comboPort.GetSafeHwnd()) return 9001;
+	CString strPort;
+	m_comboPort.GetWindowText(strPort);
+	return _ttoi(strPort);
 }
 
 void CskeletonclientDlg::UpdateStatusDisplay()
@@ -489,6 +535,7 @@ void CskeletonclientDlg::BuildFlowSteps(ServerType type)
 	m_flowSteps.clear();
 
 	FlowStep clientReq = { _T("Client request"), Colors::GRAY_BG, Colors::GRAY_TEXT };
+	FlowStep clientRes = { _T("Client response"), Colors::GRAY_BG, Colors::GRAY_TEXT };
 
 	switch (type)
 	{
@@ -498,6 +545,7 @@ void CskeletonclientDlg::BuildFlowSteps(ServerType type)
 		m_flowSteps.push_back({ _T("Dispatcher"),      Colors::PURPLE_BG, Colors::PURPLE_TEXT });
 		m_flowSteps.push_back({ _T("Service"),          Colors::CORAL_BG,  Colors::CORAL_TEXT });
 		m_flowSteps.push_back({ _T("Write / Send"),    Colors::TEAL_BG,   Colors::TEAL_TEXT });
+		m_flowSteps.push_back(clientRes);
 		break;
 
 	case SERVER_EPOLL:
@@ -506,6 +554,7 @@ void CskeletonclientDlg::BuildFlowSteps(ServerType type)
 		m_flowSteps.push_back({ _T("Dispatcher"),      Colors::PURPLE_BG, Colors::PURPLE_TEXT });
 		m_flowSteps.push_back({ _T("Service"),          Colors::CORAL_BG,  Colors::CORAL_TEXT });
 		m_flowSteps.push_back({ _T("epoll write"),     Colors::TEAL_BG,   Colors::TEAL_TEXT });
+		m_flowSteps.push_back(clientRes);
 		break;
 
 	case SERVER_EVENTBUS:
@@ -514,6 +563,7 @@ void CskeletonclientDlg::BuildFlowSteps(ServerType type)
 		m_flowSteps.push_back({ _T("EventBus"),        Colors::AMBER_BG,  Colors::AMBER_TEXT });
 		m_flowSteps.push_back({ _T("Service"),          Colors::CORAL_BG,  Colors::CORAL_TEXT });
 		m_flowSteps.push_back({ _T("epoll write"),     Colors::TEAL_BG,   Colors::TEAL_TEXT });
+		m_flowSteps.push_back(clientRes);
 		break;
 
 	case SERVER_HYBRID:
@@ -524,6 +574,7 @@ void CskeletonclientDlg::BuildFlowSteps(ServerType type)
 		m_flowSteps.push_back({ _T("JobQueue"),        Colors::PINK_BG,   Colors::PINK_TEXT });
 		m_flowSteps.push_back({ _T("Worker"),           Colors::CORAL_BG,  Colors::CORAL_TEXT });
 		m_flowSteps.push_back({ _T("epoll write"),     Colors::TEAL_BG,   Colors::TEAL_TEXT });
+		m_flowSteps.push_back(clientRes);
 		break;
 	}
 }
@@ -589,13 +640,19 @@ void CskeletonclientDlg::DrawFlowDiagram(CDC* pDC, CRect rect)
 	int stepCount = static_cast<int>(m_flowSteps.size());
 	int boxWidth = 160;
 	int boxHeight = 36;
-	int arrowGap = 16;
-	int startX = (rect.Width() - boxWidth) / 2;
+	int arrowGap = 24;    // more space between boxes
 	int cornerRadius = 14;
 
 	Gdiplus::FontFamily fontFamily(L"Arial");
 	Gdiplus::Font titleFont(&fontFamily, 12, Gdiplus::FontStyleBold, Gdiplus::UnitPixel);
 	Gdiplus::Font stepFont(&fontFamily, 11, Gdiplus::FontStyleBold, Gdiplus::UnitPixel);
+
+	// -- calculate total height for centering --
+	int titleH = 24;
+	int totalFlowH = titleH + stepCount * boxHeight + (stepCount - 1) * arrowGap;
+	int startX = (rect.Width() - boxWidth) / 2;
+	int startY = (rect.Height() - totalFlowH) / 2;
+	if (startY < 4) startY = 4;
 
 	// -- server title --
 	CString serverNames[] = {
@@ -603,7 +660,6 @@ void CskeletonclientDlg::DrawFlowDiagram(CDC* pDC, CRect rect)
 		_T("EventBus pub/sub"), _T("Hybrid")
 	};
 
-	int startY = 4;
 	if (m_currentServer >= 0 && m_currentServer < SERVER_COUNT)
 	{
 		Gdiplus::SolidBrush titleBrush(Gdiplus::Color(255, 0x1B, 0x4F, 0x72));
@@ -612,7 +668,7 @@ void CskeletonclientDlg::DrawFlowDiagram(CDC* pDC, CRect rect)
 		sf.SetAlignment(Gdiplus::StringAlignmentCenter);
 		Gdiplus::RectF titleRect(0, (Gdiplus::REAL)startY, (Gdiplus::REAL)rect.Width(), 20);
 		graphics.DrawString(wTitle, -1, &titleFont, titleRect, &sf, &titleBrush);
-		startY = 28;
+		startY += titleH;
 	}
 
 	// -- draw each step --
@@ -701,36 +757,42 @@ void CskeletonclientDlg::LayoutControls(int cx, int cy)
 
 	int margin = 4;
 	int topH = 22;
-	int logH = 150;
+	int logH = 200;
 	int editH = 20;
-	int btnH = 20;
+	int btnH = 24;        // all buttons same height
 	int serverBtnH = 24;
 
 	// -- top connection bar --
-	int x = margin;
 	int y = margin;
 
-	GetDlgItem(IDC_STATIC_SERVER_LABEL)->MoveWindow(x, y + 2, 30, 14);
-	x += 32;
-	m_comboServer.MoveWindow(x, y, 150, 200);
-	x += 154;
+	// Server combo: left side
+	GetDlgItem(IDC_STATIC_SERVER_LABEL)->MoveWindow(margin, y + 3, 30, 14);
+	m_comboServer.MoveWindow(margin + 30, y, 130, 200);
 
-	GetDlgItem(IDC_STATIC_IP_LABEL)->MoveWindow(x, y + 2, 14, 14);
-	x += 16;
-	m_editIP.MoveWindow(x, y, 110, editH);
-	x += 114;
+	// IP/Port/Connect/Status: right-aligned
+	int rx = cx - margin;
 
-	GetDlgItem(IDC_STATIC_PORT_LABEL)->MoveWindow(x, y + 2, 22, 14);
-	x += 24;
-	m_editPort.MoveWindow(x, y, 46, editH);
-	x += 50;
+	// Status (rightmost)
+	int statusW = 100;
+	rx -= statusW;
+	m_staticStatus.MoveWindow(rx, y + 3, statusW, 14);
 
-	GetDlgItem(IDC_BTN_CONNECT)->MoveWindow(x, y, 58, btnH);
-	x += 62;
-	GetDlgItem(IDC_BTN_DISCONNECT)->MoveWindow(x, y, 68, btnH);
-	x += 72;
+	// Connect button
+	rx -= (56 + 4);
+	GetDlgItem(IDC_BTN_CONNECT)->MoveWindow(rx, y, 56, btnH);
 
-	m_staticStatus.MoveWindow(x, y + 2, 120, 14);
+	// Port combo
+	rx -= (52 + 4);
+	if (m_comboPort.GetSafeHwnd())
+		m_comboPort.MoveWindow(rx, y, 52, 200);
+	rx -= (20 + 2);
+	GetDlgItem(IDC_STATIC_PORT_LABEL)->MoveWindow(rx, y + 3, 20, 14);
+
+	// IP edit
+	rx -= (110 + 4);
+	m_editIP.MoveWindow(rx, y, 110, btnH);
+	rx -= (12 + 2);
+	GetDlgItem(IDC_STATIC_IP_LABEL)->MoveWindow(rx, y + 3, 12, 14);
 
 	// -- middle area --
 	int midY = margin + topH + margin + 2;
@@ -753,30 +815,41 @@ void CskeletonclientDlg::LayoutControls(int cx, int cy)
 
 	// flow static below server buttons
 	int flowY = midY + serverBtnH + 2;
-	int flowH = midH - serverBtnH - 2;
+	int flowH = midH - serverBtnH - btnH - 8;
 	m_staticFlow.MoveWindow(margin, flowY, flowW, flowH);
 
-	// right: chat
+	// Start/Stop below flow, right-aligned, same height as all buttons
+	int startStopY = flowY + flowH + 4;
+	int startStopBtnW = 60;
+	if (m_btnStart.GetSafeHwnd())
+		m_btnStart.MoveWindow(margin + flowW - startStopBtnW * 2 - margin, startStopY, startStopBtnW, btnH);
+	if (m_btnStop.GetSafeHwnd())
+		m_btnStop.MoveWindow(margin + flowW - startStopBtnW, startStopY, startStopBtnW, btnH);
+
+	// -- right: chat (starts at same Y as flow) --
 	int chatX = margin + flowW + margin;
 	int chatW = cx - chatX - margin;
 
-	GetDlgItem(IDC_STATIC_CHAT_LABEL)->MoveWindow(chatX, midY, chatW, 16);
+	// chat label at server button row
+	GetDlgItem(IDC_STATIC_CHAT_LABEL)->MoveWindow(chatX, midY + 4, chatW, 16);
 
-	int chatListY = midY + 18;
-	int chatListH = midH - 18 - editH - margin;
-	m_listChat.MoveWindow(chatX, chatListY, chatW, chatListH);
+	// chat list starts at flowY (same as flow diagram)
+	int chatBottomY = startStopY + btnH;   // align with Start/Stop bottom
+	int chatListH = chatBottomY - flowY - editH - margin * 2;
+	m_listChat.MoveWindow(chatX, flowY, chatW, chatListH);
 
-	int msgY = chatListY + chatListH + margin;
-	int sendW = 50;
-	m_editMsg.MoveWindow(chatX, msgY, chatW - sendW - margin, editH);
-	GetDlgItem(IDC_BTN_SEND)->MoveWindow(chatX + chatW - sendW, msgY, sendW, editH);
+	// message input + send, same height as buttons
+	int msgY = flowY + chatListH + margin;
+	int sendW = 56;
+	m_editMsg.MoveWindow(chatX, msgY, chatW - sendW - margin, btnH);
+	GetDlgItem(IDC_BTN_SEND)->MoveWindow(chatX + chatW - sendW, msgY, sendW, btnH);
 
 	// -- bottom: log --
 	int logY = cy - logH - margin;
 
-	GetDlgItem(IDC_STATIC_LOG_LABEL)->MoveWindow(margin, logY, 60, 16);
-	GetDlgItem(IDC_BTN_CLEAR)->MoveWindow(cx - margin - 46, logY, 46, 16);
-	m_listLog.MoveWindow(margin, logY + 18, cx - margin * 2, logH - 20);
+	GetDlgItem(IDC_STATIC_LOG_LABEL)->MoveWindow(margin, logY + 4, 70, 14);
+	GetDlgItem(IDC_BTN_CLEAR)->MoveWindow(margin + 74, logY, 50, btnH);
+	m_listLog.MoveWindow(margin, logY + btnH + 2, cx - margin * 2, logH - btnH - 4);
 
 	// repaint flow
 	UpdateFlowDisplay();

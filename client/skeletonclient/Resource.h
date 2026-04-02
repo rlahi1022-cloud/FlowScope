@@ -25,6 +25,8 @@
 #define IDC_BTN_SERVER2             1012
 #define IDC_BTN_SERVER3             1013
 #define IDC_BTN_SERVER4             1014
+#define IDC_BTN_START               1015
+#define IDC_BTN_STOP                1016
 
 // -- Right: Chat --
 #define IDC_LIST_CHAT               1020
