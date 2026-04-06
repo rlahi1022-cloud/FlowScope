@@ -10,9 +10,11 @@
 //   router → echohandler → echoservice → eventbus
 // ------------------------------------------------
 
+// CMake include root = server/
+// 모든 경로는 server/ 기준으로 작성한다
 #include "service/handler/basehandler.h"
 #include "service/echo/echoservice.h"
-#include "common/protocol.h"
+#include "protocol.h"
 #include <functional>
 #include <unordered_map>
 

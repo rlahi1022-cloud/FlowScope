@@ -239,8 +239,11 @@ CMakeFiles/flowscope_server.dir/eventbus/eventbus.cpp.o: eventbus/eventbus.cpp \
   /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h
 
 CMakeFiles/flowscope_server.dir/infra/epollserver.cpp.o: infra/epollserver.cpp \
+  /home/lms/Desktop/flowScope/common/context.h \
+  /home/lms/Desktop/flowScope/common/packet.h \
+  /home/lms/Desktop/flowScope/common/protocol.h \
   common/logger.h \
-  common/protocol.h \
+  common/packetclass.h \
   infra/epollserver.h \
   router/router.h \
   service/handler/basehandler.h \
@@ -530,8 +533,11 @@ CMakeFiles/flowscope_server.dir/infra/epollserver.cpp.o: infra/epollserver.cpp \
   /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h
 
 CMakeFiles/flowscope_server.dir/main.cpp.o: main.cpp \
+  /home/lms/Desktop/flowScope/common/context.h \
+  /home/lms/Desktop/flowScope/common/packet.h \
+  /home/lms/Desktop/flowScope/common/protocol.h \
   common/logger.h \
-  common/protocol.h \
+  common/packetclass.h \
   eventbus/eventbus.h \
   infra/epollserver.h \
   router/router.h \
@@ -816,8 +822,11 @@ CMakeFiles/flowscope_server.dir/main.cpp.o: main.cpp \
   /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h
 
 CMakeFiles/flowscope_server.dir/router/router.cpp.o: router/router.cpp \
+  /home/lms/Desktop/flowScope/common/context.h \
+  /home/lms/Desktop/flowScope/common/packet.h \
+  /home/lms/Desktop/flowScope/common/protocol.h \
   common/logger.h \
-  common/protocol.h \
+  common/packetclass.h \
   common/traceid.h \
   router/router.h \
   service/echo/echoservice.h \
@@ -1073,8 +1082,10 @@ CMakeFiles/flowscope_server.dir/router/router.cpp.o: router/router.cpp \
   /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h
 
 CMakeFiles/flowscope_server.dir/service/echo/echoservice.cpp.o: service/echo/echoservice.cpp \
+  /home/lms/Desktop/flowScope/common/context.h \
+  /home/lms/Desktop/flowScope/common/protocol.h \
   common/logger.h \
-  common/protocol.h \
+  common/packetclass.h \
   eventbus/eventbus.h \
   service/echo/echoservice.h \
   /usr/include/alloca.h \
@@ -1312,7 +1323,9 @@ CMakeFiles/flowscope_server.dir/service/echo/echoservice.cpp.o: service/echo/ech
   /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h
 
 CMakeFiles/flowscope_server.dir/service/handler/basehandler.cpp.o: service/handler/basehandler.cpp \
-  common/protocol.h \
+  /home/lms/Desktop/flowScope/common/context.h \
+  /home/lms/Desktop/flowScope/common/protocol.h \
+  common/packetclass.h \
   service/handler/basehandler.h \
   /usr/include/alloca.h \
   /usr/include/asm-generic/errno-base.h \
@@ -1363,7 +1376,6 @@ CMakeFiles/flowscope_server.dir/service/handler/basehandler.cpp.o: service/handl
   /usr/include/c++/13/cerrno \
   /usr/include/c++/13/clocale \
   /usr/include/c++/13/cstddef \
-  /usr/include/c++/13/cstdint \
   /usr/include/c++/13/cstdio \
   /usr/include/c++/13/cstdlib \
   /usr/include/c++/13/cwchar \
@@ -1389,7 +1401,6 @@ CMakeFiles/flowscope_server.dir/service/handler/basehandler.cpp.o: service/handl
   /usr/include/linux/errno.h \
   /usr/include/locale.h \
   /usr/include/stdc-predef.h \
-  /usr/include/stdint.h \
   /usr/include/stdio.h \
   /usr/include/stdlib.h \
   /usr/include/wchar.h \
@@ -1408,8 +1419,6 @@ CMakeFiles/flowscope_server.dir/service/handler/basehandler.cpp.o: service/handl
   /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h \
   /usr/include/x86_64-linux-gnu/bits/select.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
-  /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
-  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
   /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
   /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
   /usr/include/x86_64-linux-gnu/bits/struct_mutex.h \
@@ -1455,12 +1464,13 @@ CMakeFiles/flowscope_server.dir/service/handler/basehandler.cpp.o: service/handl
   /usr/include/x86_64-linux-gnu/sys/select.h \
   /usr/include/x86_64-linux-gnu/sys/types.h \
   /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h \
-  /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
-  /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h
+  /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h
 
 CMakeFiles/flowscope_server.dir/service/handler/echohandler.cpp.o: service/handler/echohandler.cpp \
+  /home/lms/Desktop/flowScope/common/context.h \
+  /home/lms/Desktop/flowScope/common/protocol.h \
   common/logger.h \
-  common/protocol.h \
+  common/packetclass.h \
   service/echo/echoservice.h \
   service/handler/basehandler.h \
   service/handler/echohandler.h \
@@ -1789,6 +1799,8 @@ main.cpp:
 
 /usr/include/c++/13/cstring:
 
+/usr/include/c++/13/bits/stl_raw_storage_iter.h:
+
 /usr/include/c++/13/ostream:
 
 /usr/include/c++/13/bits/streambuf_iterator.h:
@@ -1839,6 +1851,10 @@ main.cpp:
 
 /usr/include/x86_64-linux-gnu/bits/stdint-least.h:
 
+/usr/include/c++/13/bits/unique_ptr.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h:
+
 /usr/include/c++/13/cstdint:
 
 /usr/include/c++/13/cstdlib:
@@ -1852,8 +1868,6 @@ main.cpp:
 /usr/include/c++/13/bits/stl_function.h:
 
 /usr/include/c++/13/bits/uses_allocator_args.h:
-
-/usr/include/arpa/inet.h:
 
 /usr/include/c++/13/bits/atomic_base.h:
 
@@ -1896,12 +1910,6 @@ infra/epollserver.cpp:
 /usr/include/c++/13/pstl/glue_memory_defs.h:
 
 /usr/include/c++/13/exception:
-
-/usr/include/x86_64-linux-gnu/bits/signum-arch.h:
-
-/usr/include/c++/13/bits/stl_pair.h:
-
-/usr/include/x86_64-linux-gnu/bits/errno.h:
 
 /usr/include/c++/13/bits/sstream.tcc:
 
@@ -2037,6 +2045,14 @@ common/logger.h:
 
 /usr/include/c++/13/backward/binders.h:
 
+/usr/include/x86_64-linux-gnu/bits/signum-arch.h:
+
+/usr/include/c++/13/bits/stl_pair.h:
+
+/usr/include/x86_64-linux-gnu/bits/errno.h:
+
+common/packetclass.h:
+
 /usr/include/x86_64-linux-gnu/sys/socket.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/struct_iovec.h:
@@ -2084,6 +2100,10 @@ service/handler/echohandler.cpp:
 /usr/include/c++/13/streambuf:
 
 /usr/include/c++/13/bits/memory_resource.h:
+
+/usr/include/c++/13/bits/shared_ptr_base.h:
+
+/usr/include/wchar.h:
 
 /usr/include/c++/13/bits/memoryfwd.h:
 
@@ -2136,8 +2156,6 @@ service/echo/echoservice.h:
 /usr/include/c++/13/vector:
 
 /usr/include/ctype.h:
-
-common/protocol.h:
 
 /usr/include/features.h:
 
@@ -2229,6 +2247,8 @@ common/traceid.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/FILE.h:
 
+/home/lms/Desktop/flowScope/common/context.h:
+
 /usr/include/x86_64-linux-gnu/bits/struct_mutex.h:
 
 /usr/include/c++/13/bits/shared_ptr.h:
@@ -2277,7 +2297,7 @@ common/traceid.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/error_t.h:
 
-/usr/include/c++/13/bits/stl_raw_storage_iter.h:
+/home/lms/Desktop/flowScope/common/packet.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/locale_t.h:
 
@@ -2296,10 +2316,6 @@ common/traceid.h:
 /usr/include/x86_64-linux-gnu/bits/waitflags.h:
 
 /usr/include/c++/13/bits/align.h:
-
-/usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h:
-
-/usr/include/c++/13/bits/unique_ptr.h:
 
 /usr/include/c++/13/bits/exception_defines.h:
 
@@ -2341,6 +2357,10 @@ common/traceid.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h:
 
+/usr/include/arpa/inet.h:
+
+/home/lms/Desktop/flowScope/common/protocol.h:
+
 /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h:
 
 router/router.h:
@@ -2350,7 +2370,3 @@ service/handler/basehandler.h:
 /usr/include/c++/13/algorithm:
 
 /usr/include/c++/13/backward/auto_ptr.h:
-
-/usr/include/wchar.h:
-
-/usr/include/c++/13/bits/shared_ptr_base.h:

@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/lms/Desktop/flowScope/server
+CXX_INCLUDES = -I/home/lms/Desktop/flowScope/server -I/home/lms/Desktop/flowScope/server/.. -I/home/lms/Desktop/flowScope/server/../common -I/home/lms/Desktop/flowScope/server/common
 
 CXX_FLAGS = -std=gnu++17 -Wall -Wextra -Wpedantic
 

@@ -19,9 +19,12 @@ set(SOURCES
 # 실행파일 생성
 add_executable(flowscope_server ${SOURCES})
 
-# 헤더 탐색 경로: 프로젝트 루트 기준
+# 헤더 탐색 경로
 target_include_directories(flowscope_server PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common
+    ${CMAKE_CURRENT_SOURCE_DIR}/common
 )
 
 # 경고 플래그 설정
@@ -29,6 +32,6 @@ target_compile_options(flowscope_server PRIVATE
     -Wall -Wextra -Wpedantic
 )
 
-# pthread 링크 (mutex, thread 사용)
+# pthread 링크
 find_package(Threads REQUIRED)
 target_link_libraries(flowscope_server PRIVATE Threads::Threads)

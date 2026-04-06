@@ -72,10 +72,11 @@ void router::route(int fd, const std::string& jsonbody)
 
     // packet 구성
     packet pkt;
-    pkt.fd       = fd;
-    pkt.protocol = proto;
-    pkt.jsonbody = jsonbody;
-    pkt.traceid  = traceid;
+    pkt.fd          = fd;
+    pkt.ctx.proto    = proto;
+    pkt.ctx.jsonbody = jsonbody;
+    pkt.ctx.traceid  = traceid;
+    pkt.ctx.cmd      = cmd;
 
     log_event("router",
               "핸들러 호출 | proto=" + protocol_to_string(proto),

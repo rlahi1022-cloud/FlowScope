@@ -16,7 +16,9 @@
 //   서버 패킷 클래스    -> server/common/packetclass.h
 // ------------------------------------------------
 
-#include "../../common/protocol.h"  // internal_protocol enum
+// protocol.h는 flowScope/common/ 에 위치
+// CMake include path: ${CMAKE_CURRENT_SOURCE_DIR}/../common
+#include "protocol.h"
 
 // ------------------------------------------------
 // processingtype
