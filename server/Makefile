@@ -129,6 +129,30 @@ flowscope_server/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server.dir/build.make CMakeFiles/flowscope_server.dir/build
 .PHONY : flowscope_server/fast
 
+common/forwarder.o: common/forwarder.cpp.o
+.PHONY : common/forwarder.o
+
+# target to build an object file
+common/forwarder.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server.dir/build.make CMakeFiles/flowscope_server.dir/common/forwarder.cpp.o
+.PHONY : common/forwarder.cpp.o
+
+common/forwarder.i: common/forwarder.cpp.i
+.PHONY : common/forwarder.i
+
+# target to preprocess a source file
+common/forwarder.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server.dir/build.make CMakeFiles/flowscope_server.dir/common/forwarder.cpp.i
+.PHONY : common/forwarder.cpp.i
+
+common/forwarder.s: common/forwarder.cpp.s
+.PHONY : common/forwarder.s
+
+# target to generate assembly for a file
+common/forwarder.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server.dir/build.make CMakeFiles/flowscope_server.dir/common/forwarder.cpp.s
+.PHONY : common/forwarder.cpp.s
+
 eventbus/eventbus.o: eventbus/eventbus.cpp.o
 .PHONY : eventbus/eventbus.o
 
@@ -306,6 +330,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... flowscope_server"
+	@echo "... common/forwarder.o"
+	@echo "... common/forwarder.i"
+	@echo "... common/forwarder.s"
 	@echo "... eventbus/eventbus.o"
 	@echo "... eventbus/eventbus.i"
 	@echo "... eventbus/eventbus.s"

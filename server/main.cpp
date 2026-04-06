@@ -11,10 +11,15 @@
 
 #include "infra/epollserver.h"
 #include "eventbus/eventbus.h"
-#include "common/logger.h"
+#include "logger.h"
+#include "packet.h"
 
 #include <csignal>
 #include <iostream>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <cstring>
+#include <cerrno>
 
 // ------------------------------------------------
 // 서버 포트
@@ -35,6 +40,49 @@ static void signal_handler(int signum)
     log_event("main", "종료 시그널 수신 | sig=" + std::to_string(signum));
     if (g_server)
         g_server->stop();
+}
+
+// ------------------------------------------------
+// send_response
+// fd로 4byte 빅엔디언 헤더 + JSON body 전송
+// epoll ET 모드이므로 전체 데이터를 루프로 전송한다
+// ------------------------------------------------
+static void send_response(int fd, const std::string& body)
+{
+    uint32_t bodylen = static_cast<uint32_t>(body.size());
+
+    // 빅엔디언 헤더 4바이트 구성
+    uint8_t header[HEADER_SIZE];
+    header[0] = (bodylen >> 24) & 0xFF;
+    header[1] = (bodylen >> 16) & 0xFF;
+    header[2] = (bodylen >>  8) & 0xFF;
+    header[3] = (bodylen      ) & 0xFF;
+
+    // 헤더 + 바디 합쳐서 전송 버퍼 구성
+    std::string packet;
+    packet.append(reinterpret_cast<char*>(header), HEADER_SIZE);
+    packet.append(body);
+
+    // 전체 전송 보장 루프
+    size_t total = packet.size();
+    size_t sent  = 0;
+    while (sent < total)
+    {
+        ssize_t n = write(fd,
+                          packet.data() + sent,
+                          total - sent);
+        if (n < 0)
+        {
+            if (errno == EINTR) continue;
+            log_event("main", "send_response write 실패 | fd=" + std::to_string(fd));
+            return;
+        }
+        sent += static_cast<size_t>(n);
+    }
+
+    log_event("main",
+              "응답 전송 완료 | fd=" + std::to_string(fd) +
+              " | size=" + std::to_string(total));
 }
 
 // ------------------------------------------------
@@ -63,6 +111,8 @@ static void register_eventbus_handlers()
             std::string traceid = payload.substr(pos1 + 1, pos2 - pos1 - 1);
             std::string body    = payload.substr(pos2 + 1);
 
+            int fd = std::stoi(fdstr);
+
             log_event("main",
                       "response 수신 | fd=" + fdstr +
                       " | body=" + body,
@@ -70,12 +120,9 @@ static void register_eventbus_handlers()
             log_flow(traceid, "eventbus", "main(response handler)",
                      "fd=" + fdstr);
 
-            // ------------------------------------------------
-            // Stage 1: 내부 흐름 검증 단계
-            // 실제 클라이언트 응답 송신은
-            // 클라이언트 연결 이후 구현 예정
-            // 현재는 로그로 결과 확인
-            // ------------------------------------------------
+            // 클라이언트로 실제 응답 전송
+            send_response(fd, body);
+
             log_event("main",
                       "★ 처리 완료 | fd=" + fdstr +
                       " | 응답=" + body,
