@@ -1,113 +1,78 @@
 #pragma once
 
 // ------------------------------------------------
-// protocol.h
-// 서버 내부 프로토콜 정의
+// internalprotocol.h
+// 서버 전용 내부 처리 분기 정의
 //
-// 클라이언트 JSON cmd 문자열 → internal_protocol enum 변환
-// 모든 내부 처리 흐름은 enum 기반으로 통일
-// ------------------------------------------------
-
-#include <string>
-#include <cstdint>
-
-// ------------------------------------------------
-// 패킷 헤더 크기 (4바이트 빅엔디언 길이 헤더)
-// ------------------------------------------------
-static constexpr int HEADER_SIZE   = 4;
-
-// ------------------------------------------------
-// 최대 패킷 바디 크기 (1MB 제한)
-// ------------------------------------------------
-static constexpr int MAX_BODY_SIZE = 1024 * 1024;
-
-// ------------------------------------------------
-// internal_protocol
-// 클라이언트 JSON cmd → 서버 내부 처리 분기용 enum
+// 책임 범위:
+//   - internal_protocol -> 서버 처리 계열 분류
+//   - 서버 아키텍처별 처리 경로를 결정하는 분기 기준
 //
-// sync  계열 : 즉시 처리, 빠른 응답
-// async 계열 : 흐름 처리, JobQueue → Worker
-// event 계열 : EventBus 경유, 별도 처리
+// include 위치:
+//   server/router, server/dispatcher (서버 전용)
+//
+// 관련 파일:
+//   공통 프로토콜 enum  -> common/protocol.h
+//   서버 패킷 클래스    -> server/common/packetclass.h
 // ------------------------------------------------
-enum class internal_protocol
+
+#include "../../common/protocol.h"  // internal_protocol enum
+
+// ------------------------------------------------
+// processingtype
+// 서버가 요청을 어떤 경로로 처리할지 결정하는 분류값
+//
+// sync  : epoll 스레드에서 즉시 처리 후 응답
+// async : JobQueue 에 적재 -> Worker Thread 에서 처리
+// event : EventBus 에 publish -> subscribe 콜백에서 처리
+// ------------------------------------------------
+enum class processingtype
 {
-    // -------------------------
-    // sync 계열 (즉시 처리)
-    // -------------------------
-    echo,           // 에코 응답
-    ping,           // 핑퐁 응답
-    debug_status,   // 서버 상태 디버그 출력
-
-    // -------------------------
-    // async 계열 (흐름 처리)
-    // -------------------------
-    flow_start,     // 흐름 시작
-    flow_step1,     // 흐름 단계 1
-    flow_step2,     // 흐름 단계 2
-    flow_end,       // 흐름 종료
-
-    // -------------------------
-    // event 계열 (EventBus 경유)
-    // -------------------------
-    ai_keyword,     // AI 처리 요청
-
-    // -------------------------
-    // 기타
-    // -------------------------
-    unknown         // 알 수 없는 프로토콜
+    sync,   // 즉시 처리 (echo, ping, debug_status)
+    async,  // Worker Thread 경유 (flow_*)
+    event,  // EventBus 경유 (ai_keyword)
+    none    // 분기 불가 (unknown)
 };
 
 // ------------------------------------------------
-// packet
-// epoll 수신 후 router → handler로 전달되는 단위
-//
-// fd       : 요청을 보낸 클라이언트 소켓 fd
-// protocol : string_to_protocol()로 변환된 내부 프로토콜
-// jsonbody : 원본 JSON 문자열 (서비스 레이어에서 파싱)
-// traceid  : 요청 추적 ID (log_flow에서 사용)
+// get_processingtype
+// internal_protocol 을 processingtype 으로 변환한다.
+// router/dispatcher 에서 처리 경로 결정 시 호출한다.
 // ------------------------------------------------
-struct packet
+inline processingtype get_processingtype(internal_protocol proto)
 {
-    int               fd;        // 클라이언트 소켓 fd
-    internal_protocol protocol;  // 내부 프로토콜 enum
-    std::string       jsonbody;  // 원본 JSON 바디
-    std::string       traceid;   // 요청 추적 ID
-};
+    switch (proto)
+    {
+        case internal_protocol::echo:
+        case internal_protocol::ping:
+        case internal_protocol::debug_status:
+            return processingtype::sync;
 
-// ------------------------------------------------
-// string_to_protocol
-// JSON cmd 문자열 → internal_protocol 변환
-// 매칭되지 않으면 unknown 반환
-// ------------------------------------------------
-inline internal_protocol string_to_protocol(const std::string& cmd)
-{
-    if (cmd == "echo")         return internal_protocol::echo;
-    if (cmd == "ping")         return internal_protocol::ping;
-    if (cmd == "debug_status") return internal_protocol::debug_status;
-    if (cmd == "flow_start")   return internal_protocol::flow_start;
-    if (cmd == "flow_step1")   return internal_protocol::flow_step1;
-    if (cmd == "flow_step2")   return internal_protocol::flow_step2;
-    if (cmd == "flow_end")     return internal_protocol::flow_end;
-    if (cmd == "ai_keyword")   return internal_protocol::ai_keyword;
-    return internal_protocol::unknown;
+        case internal_protocol::flow_start:
+        case internal_protocol::flow_step1:
+        case internal_protocol::flow_step2:
+        case internal_protocol::flow_end:
+            return processingtype::async;
+
+        case internal_protocol::ai_keyword:
+            return processingtype::event;
+
+        default:
+            return processingtype::none;
+    }
 }
 
 // ------------------------------------------------
-// protocol_to_string
-// internal_protocol → 문자열 변환 (로그 출력용)
+// processingtype_to_string
+// processingtype -> 문자열 변환 (로그 출력용)
 // ------------------------------------------------
-inline std::string protocol_to_string(internal_protocol p)
+inline std::string processingtype_to_string(processingtype pt)
 {
-    switch (p)
+    switch (pt)
     {
-        case internal_protocol::echo:         return "echo";
-        case internal_protocol::ping:         return "ping";
-        case internal_protocol::debug_status: return "debug_status";
-        case internal_protocol::flow_start:   return "flow_start";
-        case internal_protocol::flow_step1:   return "flow_step1";
-        case internal_protocol::flow_step2:   return "flow_step2";
-        case internal_protocol::flow_end:     return "flow_end";
-        case internal_protocol::ai_keyword:   return "ai_keyword";
-        default:                              return "unknown";
+        case processingtype::sync:  return "sync";
+        case processingtype::async: return "async";
+        case processingtype::event: return "event";
+        default:                    return "none";
     }
 }
