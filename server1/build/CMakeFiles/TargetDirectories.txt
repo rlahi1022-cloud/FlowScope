@@ -1,0 +1,2 @@
+/home/lms/Desktop/flowScope/server1/build/CMakeFiles/edit_cache.dir
+/home/lms/Desktop/flowScope/server1/build/CMakeFiles/rebuild_cache.dir

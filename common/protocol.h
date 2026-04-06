@@ -6,7 +6,9 @@
 //
 // 책임 범위:
 //   - internal_protocol enum 정의
+//   - target_server enum 정의
 //   - JSON "cmd" 문자열 <-> enum 변환 함수
+//   - JSON "target" 문자열 <-> enum 변환 함수
 //
 // include 위치:
 //   서버 : server/ 전 계층에서 include
@@ -24,13 +26,6 @@
 //
 // 클라이언트에서 수신한 JSON "cmd" 필드를
 // 서버 내부에서 분기 처리하기 위한 enum 이다.
-//
-// sync  계열 : epoll 스레드에서 즉시 처리
-//              (echo, ping, debug_status)
-// async 계열 : JobQueue -> Worker Thread 경유
-//              (flow_start, flow_step1, flow_step2, flow_end)
-// event 계열 : EventBus publish -> subscribe 경유
-//              (ai_keyword)
 // ------------------------------------------------
 enum class internal_protocol
 {
@@ -53,9 +48,29 @@ enum class internal_protocol
 };
 
 // ------------------------------------------------
+// target_server
+// 클라이언트 JSON "target" 필드를
+// 포워딩 대상 서버로 변환하는 enum
+//
+// none    : 중앙서버 자체 처리
+// server1 : Thread-per-Connection 서버 (port 9001)
+// server2 : epoll + worker + DB 서버   (port 9002)
+// server3 : EventBus 기반 서버         (port 9003)
+// server4 : Hybrid 서버                (port 9004)
+// ------------------------------------------------
+enum class target_server
+{
+    none,    // 중앙서버 자체 처리
+    server1, // port 9001
+    server2, // port 9002
+    server3, // port 9003
+    server4, // port 9004
+    unknown  // 매핑 실패
+};
+
+// ------------------------------------------------
 // string_to_protocol
 // JSON "cmd" 문자열을 internal_protocol 로 변환한다.
-// 매핑되지 않는 문자열은 unknown 을 반환한다.
 // ------------------------------------------------
 inline internal_protocol string_to_protocol(const std::string& cmd)
 {
@@ -73,7 +88,6 @@ inline internal_protocol string_to_protocol(const std::string& cmd)
 // ------------------------------------------------
 // protocol_to_string
 // internal_protocol enum 을 문자열로 변환한다.
-// 로그 출력 및 JSON 응답 생성 시 사용한다.
 // ------------------------------------------------
 inline std::string protocol_to_string(internal_protocol proto)
 {
@@ -88,5 +102,53 @@ inline std::string protocol_to_string(internal_protocol proto)
         case internal_protocol::flow_end:     return "flow_end";
         case internal_protocol::ai_keyword:   return "ai_keyword";
         default:                              return "unknown";
+    }
+}
+
+// ------------------------------------------------
+// string_to_target
+// JSON "target" 문자열을 target_server enum 으로 변환한다.
+// target 필드 없으면 none (중앙서버 자체 처리)
+// ------------------------------------------------
+inline target_server string_to_target(const std::string& target)
+{
+    if (target == "server1") return target_server::server1;
+    if (target == "server2") return target_server::server2;
+    if (target == "server3") return target_server::server3;
+    if (target == "server4") return target_server::server4;
+    if (target.empty())      return target_server::none;
+    return target_server::unknown;
+}
+
+// ------------------------------------------------
+// target_to_port
+// target_server enum 을 포트 번호로 변환한다.
+// ------------------------------------------------
+inline int target_to_port(target_server target)
+{
+    switch (target)
+    {
+        case target_server::server1: return 9001;
+        case target_server::server2: return 9002;
+        case target_server::server3: return 9003;
+        case target_server::server4: return 9004;
+        default:                     return -1;
+    }
+}
+
+// ------------------------------------------------
+// target_to_string
+// target_server enum 을 문자열로 변환한다. (로그용)
+// ------------------------------------------------
+inline std::string target_to_string(target_server target)
+{
+    switch (target)
+    {
+        case target_server::none:    return "none";
+        case target_server::server1: return "server1";
+        case target_server::server2: return "server2";
+        case target_server::server3: return "server3";
+        case target_server::server4: return "server4";
+        default:                     return "unknown";
     }
 }
