@@ -60,7 +60,7 @@ EQUALS = =
 CMAKE_SOURCE_DIR = /home/lms/Desktop/flowScope/server1
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/lms/Desktop/flowScope/server1/build
+CMAKE_BINARY_DIR = /home/lms/Desktop/flowScope/server1
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/lms/Desktop/flowScope/server1/build/CMakeFiles /home/lms/Desktop/flowScope/server1/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/lms/Desktop/flowScope/server1/CMakeFiles /home/lms/Desktop/flowScope/server1//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/lms/Desktop/flowScope/server1/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/lms/Desktop/flowScope/server1/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -116,6 +116,91 @@ depend:
 	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
+#=============================================================================
+# Target rules for targets named flowscope_server1
+
+# Build rule for target.
+flowscope_server1: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 flowscope_server1
+.PHONY : flowscope_server1
+
+# fast build rule for target.
+flowscope_server1/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server1.dir/build.make CMakeFiles/flowscope_server1.dir/build
+.PHONY : flowscope_server1/fast
+
+main.o: main.cpp.o
+.PHONY : main.o
+
+# target to build an object file
+main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server1.dir/build.make CMakeFiles/flowscope_server1.dir/main.cpp.o
+.PHONY : main.cpp.o
+
+main.i: main.cpp.i
+.PHONY : main.i
+
+# target to preprocess a source file
+main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server1.dir/build.make CMakeFiles/flowscope_server1.dir/main.cpp.i
+.PHONY : main.cpp.i
+
+main.s: main.cpp.s
+.PHONY : main.s
+
+# target to generate assembly for a file
+main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server1.dir/build.make CMakeFiles/flowscope_server1.dir/main.cpp.s
+.PHONY : main.cpp.s
+
+session.o: session.cpp.o
+.PHONY : session.o
+
+# target to build an object file
+session.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server1.dir/build.make CMakeFiles/flowscope_server1.dir/session.cpp.o
+.PHONY : session.cpp.o
+
+session.i: session.cpp.i
+.PHONY : session.i
+
+# target to preprocess a source file
+session.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server1.dir/build.make CMakeFiles/flowscope_server1.dir/session.cpp.i
+.PHONY : session.cpp.i
+
+session.s: session.cpp.s
+.PHONY : session.s
+
+# target to generate assembly for a file
+session.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server1.dir/build.make CMakeFiles/flowscope_server1.dir/session.cpp.s
+.PHONY : session.cpp.s
+
+tcpserver.o: tcpserver.cpp.o
+.PHONY : tcpserver.o
+
+# target to build an object file
+tcpserver.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server1.dir/build.make CMakeFiles/flowscope_server1.dir/tcpserver.cpp.o
+.PHONY : tcpserver.cpp.o
+
+tcpserver.i: tcpserver.cpp.i
+.PHONY : tcpserver.i
+
+# target to preprocess a source file
+tcpserver.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server1.dir/build.make CMakeFiles/flowscope_server1.dir/tcpserver.cpp.i
+.PHONY : tcpserver.cpp.i
+
+tcpserver.s: tcpserver.cpp.s
+.PHONY : tcpserver.s
+
+# target to generate assembly for a file
+tcpserver.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flowscope_server1.dir/build.make CMakeFiles/flowscope_server1.dir/tcpserver.cpp.s
+.PHONY : tcpserver.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -124,6 +209,16 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... flowscope_server1"
+	@echo "... main.o"
+	@echo "... main.i"
+	@echo "... main.s"
+	@echo "... session.o"
+	@echo "... session.i"
+	@echo "... session.s"
+	@echo "... tcpserver.o"
+	@echo "... tcpserver.i"
+	@echo "... tcpserver.s"
 .PHONY : help
 
 
