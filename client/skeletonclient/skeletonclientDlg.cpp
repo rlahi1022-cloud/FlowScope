@@ -294,6 +294,15 @@ void CskeletonclientDlg::SelectServer(ServerType type)
 	BuildFlowSteps(type);
 	UpdateServerButtons();
 	UpdateFlowDisplay();
+
+	// 서버에 서버 선택 이벤트 전송
+	CString serverNames[] = {
+		_T("Request-Response"), _T("epoll"), _T("EventBus"), _T("Hybrid")
+	};
+	CT2A nameA(serverNames[type], CP_UTF8);
+	std::string selectData = "{\"server_type\":\"" + std::to_string(static_cast<int>(type))
+		+ "\",\"server_name\":\"" + std::string(nameA) + "\"}";
+	SendUIEvent("ui_server_select", selectData);
 }
 
 void CskeletonclientDlg::UpdateServerButtons()
@@ -378,10 +387,16 @@ void CskeletonclientDlg::DoDisconnect()
 void CskeletonclientDlg::OnBtnStart()
 {
 	OnBtnConnect();
+
+	// 서버에 흐름 시작 이벤트 전송 (연결 성공 후 전송됨)
+	std::string startData = "{\"server_type\":\"" + std::to_string(static_cast<int>(m_currentServer)) + "\"}";
+	SendUIEvent("ui_flow_start", startData);
 }
 
 void CskeletonclientDlg::OnBtnStop()
 {
+	// 서버에 흐름 중지 이벤트 전송 (연결 해제 전에 전송)
+	SendUIEvent("ui_flow_stop");
 	DoDisconnect();
 }
 
@@ -400,6 +415,14 @@ void CskeletonclientDlg::OnSocketConnected(bool success)
 		msg.Format(_T("[System] Connected to Server %d (port %d)"),
 			m_comboServer.GetCurSel() + 1, GetSelectedPort());
 		AddChatMessage(msg);
+
+		// 서버에 연결 이벤트 전송
+		CString strIP;
+		m_editIP.GetWindowText(strIP);
+		CT2A ipA(strIP, CP_UTF8);
+		std::string connectData = "{\"ip\":\"" + std::string(ipA)
+			+ "\",\"port\":\"" + std::to_string(GetSelectedPort()) + "\"}";
+		SendUIEvent("ui_connect", connectData);
 	}
 	else
 	{
@@ -441,7 +464,9 @@ void CskeletonclientDlg::OnBtnSend()
 
 	CT2A msgA(strMsg, CP_UTF8);
 	std::string msgStr(msgA);
-	std::string json = "{\"type\":\"CHAT_MSG\",\"body\":{\"message\":\"" + msgStr + "\"}}";
+
+	// cmd 기반 프로토콜로 전송 (서버 router가 cmd 필드를 파싱)
+	std::string json = "{\"cmd\":\"ui_chat_msg\",\"data\":{\"message\":\"" + msgStr + "\"}}";
 
 	if (m_pSocket->SendPacket(json))
 	{
@@ -462,12 +487,68 @@ void CskeletonclientDlg::OnPacketReceived(const std::string& json)
 	CA2T wideJson(json.c_str(), CP_UTF8);
 	CString strJson(wideJson);
 
-	CString chatLine;
-	chatLine.Format(_T("[Server] %s"), (LPCTSTR)strJson);
-	AddChatMessage(chatLine);
+	// 로그에 전체 JSON 표시
 	AddLogEntry(strJson);
 
-	// TODO: parse json -> update m_nCurrentStep -> UpdateFlowDisplay()
+	// 서버 응답 파싱
+	std::string cmd = ParseJsonField(json, "cmd");
+	int flow_step = ParseJsonInt(json, "flow_step");
+
+	// flow_step이 있으면 흐름도 업데이트
+	m_nCurrentStep = flow_step;
+	UpdateFlowDisplay();
+
+	// 응답 cmd별 채팅 메시지 표시
+	std::string message = ParseJsonField(json, "message");
+
+	if (cmd == "ui_chat_response")
+	{
+		// 채팅 응답: data.message 표시
+		CA2T wideMsg(message.c_str(), CP_UTF8);
+		CString chatLine;
+		chatLine.Format(_T("[Server] %s"), (LPCTSTR)CString(wideMsg));
+		AddChatMessage(chatLine);
+	}
+	else if (cmd == "ui_connect_response")
+	{
+		CA2T wideMsg(message.c_str(), CP_UTF8);
+		AddChatMessage(CString(_T("[Server] ")) + CString(wideMsg));
+	}
+	else if (cmd == "ui_disconnect_response")
+	{
+		AddChatMessage(_T("[Server] Client disconnected acknowledged"));
+	}
+	else if (cmd == "ui_btn_click_response")
+	{
+		std::string button = ParseJsonField(json, "button");
+		CA2T wideBtn(button.c_str(), CP_UTF8);
+		CString chatLine;
+		chatLine.Format(_T("[Server] Button '%s' event processed"), (LPCTSTR)CString(wideBtn));
+		AddChatMessage(chatLine);
+	}
+	else if (cmd == "ui_server_select_response")
+	{
+		std::string server_name = ParseJsonField(json, "server_name");
+		CA2T wideName(server_name.c_str(), CP_UTF8);
+		CString chatLine;
+		chatLine.Format(_T("[Server] Switched to %s"), (LPCTSTR)CString(wideName));
+		AddChatMessage(chatLine);
+	}
+	else if (cmd == "ui_flow_start_response")
+	{
+		AddChatMessage(_T("[Server] Flow started"));
+	}
+	else if (cmd == "ui_flow_stop_response")
+	{
+		AddChatMessage(_T("[Server] Flow stopped"));
+	}
+	else
+	{
+		// 기존 echo/ping 등 일반 응답
+		CString chatLine;
+		chatLine.Format(_T("[Server] %s"), (LPCTSTR)strJson);
+		AddChatMessage(chatLine);
+	}
 }
 
 // ============================================
@@ -853,4 +934,89 @@ void CskeletonclientDlg::LayoutControls(int cx, int cy)
 
 	// repaint flow
 	UpdateFlowDisplay();
+}
+
+// ============================================
+// SendUIEvent - 서버에 UI 이벤트 전송
+// cmd: "ui_btn_click", "ui_server_select", etc.
+// dataJson: 이벤트 관련 데이터 (JSON 객체 문자열)
+// ============================================
+void CskeletonclientDlg::SendUIEvent(const std::string& cmd,
+                                      const std::string& dataJson)
+{
+	if (!m_bConnected || !m_pSocket) return;
+
+	std::string json = "{\"cmd\":\"" + cmd + "\",\"data\":" + dataJson + "}";
+
+	if (m_pSocket->SendPacket(json))
+	{
+		CA2T wideCmd(cmd.c_str(), CP_UTF8);
+		CString logLine;
+		logLine.Format(_T("[UIEvent] Sent: %s"), (LPCTSTR)CString(wideCmd));
+		AddLogEntry(logLine);
+	}
+}
+
+// ============================================
+// ParseJsonField - JSON에서 문자열 필드 추출 (간이 파서)
+// data 내부의 필드도 검색 (중첩 지원)
+// ============================================
+std::string CskeletonclientDlg::ParseJsonField(const std::string& json,
+                                                const std::string& field)
+{
+	std::string key = "\"" + field + "\"";
+	size_t pos = json.find(key);
+	if (pos == std::string::npos) return "";
+
+	pos = json.find(':', pos + key.size());
+	if (pos == std::string::npos) return "";
+
+	++pos;
+	while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\t')) ++pos;
+	if (pos >= json.size()) return "";
+
+	// 문자열 값
+	if (json[pos] == '"')
+	{
+		++pos;
+		size_t end = json.find('"', pos);
+		if (end == std::string::npos) return "";
+		return json.substr(pos, end - pos);
+	}
+
+	return "";
+}
+
+// ============================================
+// ParseJsonInt - JSON에서 정수 필드 추출
+// ============================================
+int CskeletonclientDlg::ParseJsonInt(const std::string& json,
+                                      const std::string& field)
+{
+	std::string key = "\"" + field + "\"";
+	size_t pos = json.find(key);
+	if (pos == std::string::npos) return -1;
+
+	pos = json.find(':', pos + key.size());
+	if (pos == std::string::npos) return -1;
+
+	++pos;
+	while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\t')) ++pos;
+	if (pos >= json.size()) return -1;
+
+	// 숫자 또는 음수
+	std::string numStr;
+	if (json[pos] == '-')
+	{
+		numStr += '-';
+		++pos;
+	}
+	while (pos < json.size() && json[pos] >= '0' && json[pos] <= '9')
+	{
+		numStr += json[pos];
+		++pos;
+	}
+
+	if (numStr.empty() || numStr == "-") return -1;
+	return std::stoi(numStr);
 }

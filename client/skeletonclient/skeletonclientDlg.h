@@ -92,6 +92,13 @@ private:
 	void OnSocketDisconnected();
 	void OnPacketReceived(const std::string& json);
 
+	// -- UI event 전송 (서버에 UI 동작 알림) --
+	void SendUIEvent(const std::string& cmd, const std::string& dataJson = "{}");
+
+	// -- 응답 JSON 파싱 헬퍼 --
+	std::string ParseJsonField(const std::string& json, const std::string& field);
+	int         ParseJsonInt(const std::string& json, const std::string& field);
+
 	// -- UI helpers --
 	void AddChatMessage(const CString& msg);
 	void AddLogEntry(const CString& log);
