@@ -54,6 +54,17 @@ void session::run()
                 response = build_ping_response(traceid);
                 break;
 
+            // UI 이벤트 7종
+            case internal_protocol::ui_btn_click:
+            case internal_protocol::ui_server_select:
+            case internal_protocol::ui_connect:
+            case internal_protocol::ui_disconnect:
+            case internal_protocol::ui_chat_msg:
+            case internal_protocol::ui_flow_start:
+            case internal_protocol::ui_flow_stop:
+                response = build_ui_response(cmd, body, traceid);
+                break;
+
             default:
                 log_event("session",
                           "알 수 없는 cmd | 처리 중단 | cmd=" + cmd,
@@ -211,5 +222,113 @@ std::string session::build_ping_response(const std::string& traceid)
     json += "\"server\":\"server1\",";
     json += "\"data\":\"pong\"";
     json += "}";
+    return json;
+}
+
+// ------------------------------------------------
+// get_response_cmd
+// UI cmd 문자열을 response cmd로 변환
+// 특수: ui_chat_msg → ui_chat_response (클라이언트 규칙)
+// ------------------------------------------------
+std::string session::get_response_cmd(const std::string& cmd)
+{
+    if (cmd == "ui_chat_msg") return "ui_chat_response";
+    return cmd + "_response";
+}
+
+// ------------------------------------------------
+// parse_field
+// JSON에서 특정 문자열 필드 값 추출
+// ------------------------------------------------
+std::string session::parse_field(const std::string& json,
+                                  const std::string& field)
+{
+    std::string key = "\"" + field + "\"";
+    size_t pos = json.find(key);
+    if (pos == std::string::npos) return "";
+
+    pos = json.find(':', pos + key.size());
+    if (pos == std::string::npos) return "";
+
+    ++pos;
+    while (pos < json.size() && json[pos] == ' ') ++pos;
+    if (pos >= json.size() || json[pos] != '"') return "";
+    ++pos;
+
+    size_t end = json.find('"', pos);
+    if (end == std::string::npos) return "";
+
+    return json.substr(pos, end - pos);
+}
+
+// ------------------------------------------------
+// build_ui_response
+// 7가지 UI 이벤트에 대한 응답 JSON 생성
+// flow_step: 클라이언트 흐름도 업데이트용 단계 번호
+// ------------------------------------------------
+std::string session::build_ui_response(const std::string& cmd,
+                                        const std::string& body,
+                                        const std::string& traceid)
+{
+    std::string resp_cmd = get_response_cmd(cmd);
+    int flow_step = -1;
+    std::string message;
+
+    if (cmd == "ui_btn_click")
+    {
+        flow_step = 1;
+        std::string btn = parse_field(body, "button");
+        message = "[Server1] btn_click: " + btn;
+    }
+    else if (cmd == "ui_server_select")
+    {
+        flow_step = -1;
+        std::string srv = parse_field(body, "server");
+        message = "[Server1] server_select: " + srv;
+    }
+    else if (cmd == "ui_connect")
+    {
+        flow_step = 0;
+        message = "[Server1] connected";
+    }
+    else if (cmd == "ui_disconnect")
+    {
+        flow_step = -1;
+        message = "[Server1] disconnected";
+    }
+    else if (cmd == "ui_chat_msg")
+    {
+        flow_step = 3;
+        std::string msg = parse_field(body, "message");
+        message = "[Server1 Echo] " + msg;
+    }
+    else if (cmd == "ui_flow_start")
+    {
+        flow_step = 0;
+        message = "[Server1] flow started";
+    }
+    else if (cmd == "ui_flow_stop")
+    {
+        flow_step = -1;
+        message = "[Server1] flow stopped";
+    }
+
+    std::string json;
+    json += "{";
+    json += "\"cmd\":\"" + resp_cmd + "\",";
+    json += "\"traceid\":\"" + traceid + "\",";
+    json += "\"server\":\"server1\",";
+    json += "\"flow_step\":" + std::to_string(flow_step) + ",";
+    json += "\"data\":{";
+    json += "\"message\":\"" + message + "\",";
+    json += "\"status\":\"ok\"";
+    json += "}";
+    json += "}";
+
+    log_event("session",
+              "UI 응답 생성 | cmd=" + resp_cmd +
+              " | flow_step=" + std::to_string(flow_step),
+              "", traceid);
+
     return json;
 }

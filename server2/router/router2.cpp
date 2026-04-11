@@ -5,6 +5,7 @@
 
 #include "router/router2.h"
 #include "service/handler/echohandler2.h"
+#include "service/handler/uieventhandler2.h"
 #include "common/logger.h"
 #include "common/traceid.h"
 
@@ -20,7 +21,17 @@ router2::router2()
     routemap[static_cast<int>(internal_protocol::echo)] = handler;
     routemap[static_cast<int>(internal_protocol::ping)] = handler;
 
-    log_event("router2", "라우팅 테이블 초기화 완료 | echo, ping 등록");
+    // UI 이벤트 핸들러 등록
+    auto uihandler = std::make_shared<uieventhandler2>();
+    routemap[static_cast<int>(internal_protocol::ui_btn_click)]     = uihandler;
+    routemap[static_cast<int>(internal_protocol::ui_server_select)] = uihandler;
+    routemap[static_cast<int>(internal_protocol::ui_connect)]       = uihandler;
+    routemap[static_cast<int>(internal_protocol::ui_disconnect)]    = uihandler;
+    routemap[static_cast<int>(internal_protocol::ui_chat_msg)]      = uihandler;
+    routemap[static_cast<int>(internal_protocol::ui_flow_start)]    = uihandler;
+    routemap[static_cast<int>(internal_protocol::ui_flow_stop)]     = uihandler;
+
+    log_event("router2", "라우팅 테이블 초기화 완료 | echo, ping, ui_event 등록");
 }
 
 // ------------------------------------------------
@@ -73,7 +84,7 @@ void router2::route(int fd, const std::string& jsonbody)
     log_event("router2",
               "핸들러 호출 | proto=" + protocol_to_string(proto),
               "", traceid);
-    log_flow(traceid, "router2", "echohandler2",
+    log_flow(traceid, "router2", "handler",
              "proto=" + protocol_to_string(proto));
 
     it->second->handle(pkt);

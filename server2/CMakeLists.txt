@@ -18,6 +18,8 @@ set(SOURCES
     service/handler/basehandler2.cpp
     service/handler/echohandler2.cpp
     service/echo/echoservice2.cpp
+    service/handler/uieventhandler2.cpp
+    service/uievent/uieventservice2.cpp
 )
 
 add_executable(flowscope_server2 ${SOURCES})
@@ -25,6 +27,8 @@ add_executable(flowscope_server2 ${SOURCES})
 target_include_directories(flowscope_server2 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/common
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common
 )
 
 target_compile_options(flowscope_server2 PRIVATE

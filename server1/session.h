@@ -50,5 +50,19 @@ private:
     // ping 응답 생성
     std::string build_ping_response(const std::string& traceid);
 
+    // ------------------------------------------------
+    // UI 이벤트 응답 생성
+    // ------------------------------------------------
+    std::string build_ui_response(const std::string& cmd,
+                                  const std::string& body,
+                                  const std::string& traceid);
+
+    // JSON에서 특정 문자열 필드 추출
+    std::string parse_field(const std::string& json,
+                            const std::string& field);
+
+    // UI cmd → response cmd 변환
+    std::string get_response_cmd(const std::string& cmd);
+
     int fd_; // 클라이언트 소켓
 };
