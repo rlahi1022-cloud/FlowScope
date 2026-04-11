@@ -10,6 +10,7 @@
 // ------------------------------------------------
 
 #include "infra/epollserver3.h"
+#include "common/logger.h"
 
 #include <sys/socket.h>
 #include <sys/epoll.h>
