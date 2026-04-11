@@ -45,7 +45,8 @@ namespace Colors
 
 static const int DEFAULT_PORTS[SERVER_COUNT] = { 9001, 9002, 9003, 9004 };
 
-#define TIMER_FLOW_REPAINT 1001
+#define TIMER_FLOW_REPAINT  1001
+#define TIMER_FLOW_ANIMATE  1002
 
 // ============================================
 // AboutBox
@@ -96,6 +97,7 @@ CskeletonclientDlg::CskeletonclientDlg(CWnd* pParent)
 	, m_bConnected(false)
 	, m_currentServer(SERVER_EPOLL)
 	, m_nCurrentStep(-1)
+	, m_nTargetStep(-1)
 {
 }
 
@@ -159,6 +161,7 @@ BOOL CskeletonclientDlg::OnInitDialog()
 		CBS_DROPDOWNLIST | WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_TABSTOP,
 		CRect(0, 0, 60, 200), this, IDC_EDIT_PORT + 100);
 	m_comboPort.SetFont(GetFont());
+	m_comboPort.AddString(_T("9000"));  // 중앙서버 (포워딩)
 	m_comboPort.AddString(_T("9001"));
 	m_comboPort.AddString(_T("9002"));
 	m_comboPort.AddString(_T("9003"));
@@ -237,6 +240,20 @@ void CskeletonclientDlg::OnTimer(UINT_PTR nIDEvent)
 	{
 		KillTimer(TIMER_FLOW_REPAINT);
 		UpdateFlowDisplay();
+	}
+	else if (nIDEvent == TIMER_FLOW_ANIMATE)
+	{
+		// 스텝 애니메이션: 현재 → 타겟까지 한 칸씩 전진
+		if (m_nCurrentStep < m_nTargetStep)
+		{
+			m_nCurrentStep++;
+			UpdateFlowDisplay();
+		}
+		else
+		{
+			// 타겟 도달 → 타이머 정지
+			KillTimer(TIMER_FLOW_ANIMATE);
+		}
 	}
 	CDialogEx::OnTimer(nIDEvent);
 }
@@ -386,18 +403,44 @@ void CskeletonclientDlg::DoDisconnect()
 
 void CskeletonclientDlg::OnBtnStart()
 {
-	OnBtnConnect();
+	if (!m_bConnected) return;  // 연결 안 된 상태면 무시
 
-	// 서버에 흐름 시작 이벤트 전송 (연결 성공 후 전송됨)
+	// 서버에 흐름 시작 이벤트 전송
 	std::string startData = "{\"server_type\":\"" + std::to_string(static_cast<int>(m_currentServer)) + "\"}";
 	SendUIEvent("ui_flow_start", startData);
+
+	// 흐름도 애니메이션: 0번부터 마지막 스텝까지 순서대로
+	int lastStep = static_cast<int>(m_flowSteps.size()) - 1;
+	if (lastStep >= 0)
+	{
+		m_nCurrentStep = 0;
+		m_nTargetStep = lastStep;
+		UpdateFlowDisplay();
+		if (lastStep > 0)
+		{
+			SetTimer(TIMER_FLOW_ANIMATE, 300, NULL);
+		}
+	}
+
+	// Start 비활성, Stop 활성
+	if (m_btnStart.GetSafeHwnd()) m_btnStart.EnableWindow(FALSE);
+	if (m_btnStop.GetSafeHwnd()) m_btnStop.EnableWindow(TRUE);
 }
 
 void CskeletonclientDlg::OnBtnStop()
 {
-	// 서버에 흐름 중지 이벤트 전송 (연결 해제 전에 전송)
+	// 서버에 흐름 중지 이벤트 전송 (연결은 유지)
 	SendUIEvent("ui_flow_stop");
-	DoDisconnect();
+
+	// 흐름도 리셋
+	KillTimer(TIMER_FLOW_ANIMATE);
+	m_nCurrentStep = -1;
+	m_nTargetStep = -1;
+	UpdateFlowDisplay();
+
+	// Stop 비활성, Start 활성
+	if (m_btnStart.GetSafeHwnd()) m_btnStart.EnableWindow(TRUE);
+	if (m_btnStop.GetSafeHwnd()) m_btnStop.EnableWindow(FALSE);
 }
 
 void CskeletonclientDlg::OnSocketConnected(bool success)
@@ -408,8 +451,8 @@ void CskeletonclientDlg::OnSocketConnected(bool success)
 		UpdateStatusDisplay();
 		GetDlgItem(IDC_BTN_CONNECT)->EnableWindow(FALSE);
 		GetDlgItem(IDC_BTN_SEND)->EnableWindow(TRUE);
-		if (m_btnStart.GetSafeHwnd()) m_btnStart.EnableWindow(FALSE);
-		if (m_btnStop.GetSafeHwnd()) m_btnStop.EnableWindow(TRUE);
+		if (m_btnStart.GetSafeHwnd()) m_btnStart.EnableWindow(TRUE);   // 연결 후 Start 활성화
+		if (m_btnStop.GetSafeHwnd()) m_btnStop.EnableWindow(FALSE);
 
 		CString msg;
 		msg.Format(_T("[System] Connected to Server %d (port %d)"),
@@ -465,21 +508,15 @@ void CskeletonclientDlg::OnBtnSend()
 	CT2A msgA(strMsg, CP_UTF8);
 	std::string msgStr(msgA);
 
-	// cmd 기반 프로토콜로 전송 (서버 router가 cmd 필드를 파싱)
-	std::string json = "{\"cmd\":\"ui_chat_msg\",\"data\":{\"message\":\"" + msgStr + "\"}}";
+	// SendUIEvent로 전송 (target 필드 포함 → 중앙서버가 해당 서버로 포워딩)
+	std::string chatData = "{\"message\":\"" + msgStr + "\"}";
+	SendUIEvent("ui_chat_msg", chatData);
 
-	if (m_pSocket->SendPacket(json))
-	{
-		CString chatLine;
-		chatLine.Format(_T("[Me] %s"), (LPCTSTR)strMsg);
-		AddChatMessage(chatLine);
-		m_editMsg.SetWindowText(_T(""));
-		m_editMsg.SetFocus();
-	}
-	else
-	{
-		AddChatMessage(_T("[System] Send failed"));
-	}
+	CString chatLine;
+	chatLine.Format(_T("[Me] %s"), (LPCTSTR)strMsg);
+	AddChatMessage(chatLine);
+	m_editMsg.SetWindowText(_T(""));
+	m_editMsg.SetFocus();
 }
 
 void CskeletonclientDlg::OnPacketReceived(const std::string& json)
@@ -494,9 +531,27 @@ void CskeletonclientDlg::OnPacketReceived(const std::string& json)
 	std::string cmd = ParseJsonField(json, "cmd");
 	int flow_step = ParseJsonInt(json, "flow_step");
 
-	// flow_step이 있으면 흐름도 업데이트
-	m_nCurrentStep = flow_step;
-	UpdateFlowDisplay();
+	// 애니메이션이 이미 진행 중이면 서버 응답으로 덮어쓰지 않음
+	bool animRunning = (m_nTargetStep > 0 && m_nCurrentStep < m_nTargetStep);
+
+	if (!animRunning)
+	{
+		if (flow_step >= 0)
+		{
+			// 채팅 등 개별 응답: 해당 스텝만 하이라이트
+			m_nCurrentStep = flow_step;
+			m_nTargetStep = flow_step;
+			UpdateFlowDisplay();
+		}
+		else if (flow_step < 0)
+		{
+			// flow_step < 0 이면 리셋 (흐름도 비활성)
+			KillTimer(TIMER_FLOW_ANIMATE);
+			m_nCurrentStep = -1;
+			m_nTargetStep = -1;
+			UpdateFlowDisplay();
+		}
+	}
 
 	// 응답 cmd별 채팅 메시지 표시
 	std::string message = ParseJsonField(json, "message");
@@ -562,10 +617,11 @@ void CskeletonclientDlg::OnComboServerChange()
 
 void CskeletonclientDlg::SetDefaultPort()
 {
-	int sel = m_comboServer.GetCurSel();
-	if (sel >= 0 && sel < SERVER_COUNT && m_comboPort.GetSafeHwnd())
+	// 항상 중앙서버(9000) 포트를 기본값으로 설정
+	// 중앙서버가 target 필드 기반으로 server1~4로 포워딩
+	if (m_comboPort.GetSafeHwnd())
 	{
-		m_comboPort.SetCurSel(sel);
+		m_comboPort.SetCurSel(0);  // index 0 = 9000
 	}
 }
 
@@ -946,13 +1002,21 @@ void CskeletonclientDlg::SendUIEvent(const std::string& cmd,
 {
 	if (!m_bConnected || !m_pSocket) return;
 
-	std::string json = "{\"cmd\":\"" + cmd + "\",\"data\":" + dataJson + "}";
+	// 현재 선택된 서버를 target으로 지정 → 중앙서버가 해당 서버로 포워딩
+	std::string targetNames[] = { "server1", "server2", "server3", "server4" };
+	std::string target = targetNames[static_cast<int>(m_currentServer)];
+
+	std::string json = "{\"cmd\":\"" + cmd
+		+ "\",\"target\":\"" + target
+		+ "\",\"data\":" + dataJson + "}";
 
 	if (m_pSocket->SendPacket(json))
 	{
 		CA2T wideCmd(cmd.c_str(), CP_UTF8);
 		CString logLine;
-		logLine.Format(_T("[UIEvent] Sent: %s"), (LPCTSTR)CString(wideCmd));
+		logLine.Format(_T("[UIEvent] Sent: %s → %s"),
+			(LPCTSTR)CString(wideCmd),
+			(LPCTSTR)CString(CA2T(target.c_str(), CP_UTF8)));
 		AddLogEntry(logLine);
 	}
 }

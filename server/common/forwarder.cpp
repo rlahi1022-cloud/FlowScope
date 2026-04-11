@@ -197,6 +197,7 @@ bool forwarder::recv_packet(int fd, std::string& out_body)
 // ------------------------------------------------
 // send_to_client
 // 클라이언트 fd로 4byte 헤더 + body 전송
+// non-blocking fd 대응: EAGAIN 시 짧은 대기 후 재시도
 // ------------------------------------------------
 void forwarder::send_to_client(int client_fd, const std::string& body)
 {
@@ -214,6 +215,7 @@ void forwarder::send_to_client(int client_fd, const std::string& body)
 
     size_t total = pkt.size();
     size_t sent  = 0;
+    int retries  = 0;
 
     while (sent < total)
     {
@@ -223,9 +225,20 @@ void forwarder::send_to_client(int client_fd, const std::string& body)
         if (n < 0)
         {
             if (errno == EINTR) continue;
+            if ((errno == EAGAIN || errno == EWOULDBLOCK) && retries < 50)
+            {
+                // non-blocking fd: 짧은 대기 후 재시도
+                usleep(1000); // 1ms
+                retries++;
+                continue;
+            }
+            log_event("forwarder",
+                      "send_to_client 실패 | fd=" + std::to_string(client_fd) +
+                      " | err=" + strerror(errno));
             return;
         }
         sent += static_cast<size_t>(n);
+        retries = 0;
     }
 }
 

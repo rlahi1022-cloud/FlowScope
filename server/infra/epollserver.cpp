@@ -168,31 +168,54 @@ void epollserver::handle_accept()
 
 void epollserver::handle_read(int fd)
 {
-    auto& buf = recvbuffers_[fd];
-    char tmp[4096];
-
+    // ET 모드 + forwarder 블로킹 대응:
+    // forwarder가 블로킹하는 동안 새 데이터가 도착할 수 있으므로
+    // parse_packet 후에도 한 번 더 읽기 시도
     while (true)
     {
-        ssize_t n = read(fd, tmp, sizeof(tmp));
+        auto& buf = recvbuffers_[fd];
+        char tmp[4096];
 
-        if (n < 0)
+        // 1단계: EAGAIN까지 읽기
+        while (true)
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) break;
-            log_event("epollserver", "read 오류 | fd=" + std::to_string(fd));
-            close_client(fd);
-            return;
-        }
-        else if (n == 0)
-        {
-            log_event("epollserver", "클라이언트 연결 종료 | fd=" + std::to_string(fd));
-            close_client(fd);
-            return;
+            ssize_t n = read(fd, tmp, sizeof(tmp));
+
+            if (n < 0)
+            {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) break;
+                log_event("epollserver", "read 오류 | fd=" + std::to_string(fd));
+                close_client(fd);
+                return;
+            }
+            else if (n == 0)
+            {
+                log_event("epollserver", "클라이언트 연결 종료 | fd=" + std::to_string(fd));
+                close_client(fd);
+                return;
+            }
+
+            buf.insert(buf.end(), tmp, tmp + n);
         }
 
-        buf.insert(buf.end(), tmp, tmp + n);
+        // 2단계: 버퍼에 완성 패킷이 있으면 처리
+        size_t before = buf.size();
+        parse_packet(fd);
+
+        // fd가 close_client로 닫혔을 수 있으므로 확인
+        if (recvbuffers_.find(fd) == recvbuffers_.end())
+            return;
+
+        // 3단계: parse_packet에서 forwarder가 블로킹한 동안
+        // 새 데이터가 도착했을 수 있으므로 한 번 더 시도
+        // 버퍼가 변하지 않았으면 더 이상 처리할 것 없음 → 종료
+        ssize_t peek = read(fd, tmp, sizeof(tmp));
+        if (peek <= 0)
+            break; // EAGAIN 또는 종료 → 외부 루프 탈출
+
+        buf.insert(buf.end(), tmp, tmp + peek);
+        // 외부 루프로 돌아가서 다시 EAGAIN까지 읽기 + parse
     }
-
-    parse_packet(fd);
 }
 
 void epollserver::close_client(int fd)

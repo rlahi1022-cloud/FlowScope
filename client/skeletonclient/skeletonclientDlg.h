@@ -77,6 +77,7 @@ private:
 	// -- flow --
 	ServerType            m_currentServer;
 	int                   m_nCurrentStep;
+	int                   m_nTargetStep;    // 애니메이션 목표 스텝
 	std::vector<FlowStep> m_flowSteps;
 
 	// -- flow functions --
