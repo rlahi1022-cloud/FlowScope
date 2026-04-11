@@ -11,6 +11,8 @@ set(SOURCES
     service/handler/basehandler.cpp
     service/handler/echohandler.cpp
     service/echo/echoservice.cpp
+    service/handler/uieventhandler.cpp
+    service/uievent/uieventservice.cpp
     infra/epollserver.cpp
     common/forwarder.cpp
 )

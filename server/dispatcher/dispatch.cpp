@@ -41,6 +41,18 @@ dispatch_type get_dispatch_type(internal_protocol protocol)
             return dispatch_type::event;
 
         // -------------------------
+        // sync: UI 이벤트 (즉시 응답)
+        // -------------------------
+        case internal_protocol::ui_btn_click:
+        case internal_protocol::ui_server_select:
+        case internal_protocol::ui_connect:
+        case internal_protocol::ui_disconnect:
+        case internal_protocol::ui_chat_msg:
+        case internal_protocol::ui_flow_start:
+        case internal_protocol::ui_flow_stop:
+            return dispatch_type::sync;
+
+        // -------------------------
         // unknown: 처리 불가
         // -------------------------
         default:

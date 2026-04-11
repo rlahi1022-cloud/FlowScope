@@ -43,6 +43,15 @@ enum class internal_protocol
     // event 계열 - EventBus 경유
     ai_keyword,     // AI 서버(PC3)로 전달할 키워드
 
+    // ui_event 계열 - 클라이언트 UI 동작 전달
+    ui_btn_click,       // 버튼 클릭 이벤트
+    ui_server_select,   // 서버 선택 변경
+    ui_connect,         // 서버 연결 요청
+    ui_disconnect,      // 서버 연결 해제
+    ui_chat_msg,        // 채팅 메시지 전송
+    ui_flow_start,      // 흐름 처리 시작 요청
+    ui_flow_stop,       // 흐름 처리 중지 요청
+
     // 분기 불가
     unknown         // cmd 매핑 실패 시 반환
 };
@@ -82,6 +91,13 @@ inline internal_protocol string_to_protocol(const std::string& cmd)
     if (cmd == "flow_step2")   return internal_protocol::flow_step2;
     if (cmd == "flow_end")     return internal_protocol::flow_end;
     if (cmd == "ai_keyword")   return internal_protocol::ai_keyword;
+    if (cmd == "ui_btn_click")     return internal_protocol::ui_btn_click;
+    if (cmd == "ui_server_select") return internal_protocol::ui_server_select;
+    if (cmd == "ui_connect")       return internal_protocol::ui_connect;
+    if (cmd == "ui_disconnect")    return internal_protocol::ui_disconnect;
+    if (cmd == "ui_chat_msg")      return internal_protocol::ui_chat_msg;
+    if (cmd == "ui_flow_start")    return internal_protocol::ui_flow_start;
+    if (cmd == "ui_flow_stop")     return internal_protocol::ui_flow_stop;
     return internal_protocol::unknown;
 }
 
@@ -100,8 +116,15 @@ inline std::string protocol_to_string(internal_protocol proto)
         case internal_protocol::flow_step1:   return "flow_step1";
         case internal_protocol::flow_step2:   return "flow_step2";
         case internal_protocol::flow_end:     return "flow_end";
-        case internal_protocol::ai_keyword:   return "ai_keyword";
-        default:                              return "unknown";
+        case internal_protocol::ai_keyword:     return "ai_keyword";
+        case internal_protocol::ui_btn_click:     return "ui_btn_click";
+        case internal_protocol::ui_server_select: return "ui_server_select";
+        case internal_protocol::ui_connect:       return "ui_connect";
+        case internal_protocol::ui_disconnect:    return "ui_disconnect";
+        case internal_protocol::ui_chat_msg:      return "ui_chat_msg";
+        case internal_protocol::ui_flow_start:    return "ui_flow_start";
+        case internal_protocol::ui_flow_stop:     return "ui_flow_stop";
+        default:                                  return "unknown";
     }
 }
 

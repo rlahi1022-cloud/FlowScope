@@ -59,6 +59,16 @@ inline processingtype get_processingtype(internal_protocol proto)
         case internal_protocol::ai_keyword:
             return processingtype::event;
 
+        // UI 이벤트 계열 - 즉시 응답
+        case internal_protocol::ui_btn_click:
+        case internal_protocol::ui_server_select:
+        case internal_protocol::ui_connect:
+        case internal_protocol::ui_disconnect:
+        case internal_protocol::ui_chat_msg:
+        case internal_protocol::ui_flow_start:
+        case internal_protocol::ui_flow_stop:
+            return processingtype::sync;
+
         default:
             return processingtype::none;
     }

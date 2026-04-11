@@ -6,6 +6,7 @@
 
 #include "router/router.h"
 #include "service/handler/echohandler.h"
+#include "service/handler/uieventhandler.h"
 #include "logger.h"
 #include "traceid.h"
 
@@ -19,7 +20,17 @@ router::router()
     routemap[static_cast<int>(internal_protocol::echo)] = handler;
     routemap[static_cast<int>(internal_protocol::ping)] = handler;
 
-    log_event("router", "라우팅 테이블 초기화 완료 | echo, ping 등록");
+    // UI 이벤트 핸들러 등록
+    auto uihandler = std::make_shared<uieventhandler>();
+    routemap[static_cast<int>(internal_protocol::ui_btn_click)]     = uihandler;
+    routemap[static_cast<int>(internal_protocol::ui_server_select)] = uihandler;
+    routemap[static_cast<int>(internal_protocol::ui_connect)]       = uihandler;
+    routemap[static_cast<int>(internal_protocol::ui_disconnect)]    = uihandler;
+    routemap[static_cast<int>(internal_protocol::ui_chat_msg)]      = uihandler;
+    routemap[static_cast<int>(internal_protocol::ui_flow_start)]    = uihandler;
+    routemap[static_cast<int>(internal_protocol::ui_flow_stop)]     = uihandler;
+
+    log_event("router", "라우팅 테이블 초기화 완료 | echo, ping, ui_event 등록");
 }
 
 // ------------------------------------------------
