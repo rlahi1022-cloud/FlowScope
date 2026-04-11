@@ -27,6 +27,8 @@ add_executable(flowscope_server3 ${SOURCES})
 target_include_directories(flowscope_server3 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/common
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common
 )
 
 target_compile_options(flowscope_server3 PRIVATE
