@@ -163,7 +163,7 @@ int main()
         // payload에서 proto 추출하여 echo 관련인지 판단
         // 간단한 구현: 모든 request를 echo_handler가 처리
         // 실제로는 proto 기반 분기 필요
-        size_t pos = payload.find(":\"cmd\"");
+        size_t pos = payload.find("\"cmd\"");
         if (pos != std::string::npos)
         {
             std::string cmd_part = payload.substr(pos);
@@ -179,7 +179,7 @@ int main()
     bus.subscribe("request", [uievent_handler](const std::string& payload)
     {
         // payload에서 proto 추출하여 ui_* 관련인지 판단
-        size_t pos = payload.find(":\"cmd\"");
+        size_t pos = payload.find("\"cmd\"");
         if (pos != std::string::npos)
         {
             std::string cmd_part = payload.substr(pos);
